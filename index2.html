@@ -1,0 +1,2070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Earth Station</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+
+<!-- CrazyGames HTML5 SDK v2 — loads and initializes itself, no init() call needed -->
+
+
+
+<style>
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+:root {
+  --font-display: "Sora", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --c-cyan: #00dbe9;
+  --c-gold: #e9c400;
+  --c-violet: #a663cc;
+  --c-magenta: #f72585;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: radial-gradient(ellipse at top, #16213e 0%, #0d0d1f 55%, #08081a 100%);
+  font-family: var(--font-body);
+  color: #e2e0fb;
+}
+
+/* twinkling starfield backdrop, pure CSS, zero asset loading */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, #fff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 70% 60%, #fff 100%, transparent),
+    radial-gradient(1px 1px at 40% 80%, #fff 100%, transparent),
+    radial-gradient(1px 1px at 85% 15%, #fff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 55% 45%, #fff 100%, transparent),
+    radial-gradient(1px 1px at 10% 65%, #fff 100%, transparent),
+    radial-gradient(1px 1px at 90% 85%, #fff 100%, transparent),
+    radial-gradient(1px 1px at 30% 10%, #fff 100%, transparent),
+    radial-gradient(1px 1px at 65% 92%, #fff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 5% 45%, #fff 100%, transparent);
+  background-size: 100% 100%;
+  opacity: 0.5;
+  animation: twinkleA 5s ease-in-out infinite;
+}
+
+body::after {
+  background-image:
+    radial-gradient(1px 1px at 15% 50%, #a8e8ff 100%, transparent),
+    radial-gradient(1px 1px at 50% 25%, #d7cfff 100%, transparent),
+    radial-gradient(1px 1px at 78% 70%, #a8e8ff 100%, transparent),
+    radial-gradient(1.2px 1.2px at 92% 40%, #d7cfff 100%, transparent);
+  background-size: 100% 100%;
+  opacity: 0.35;
+  animation: twinkleB 7s ease-in-out infinite;
+}
+
+@keyframes twinkleA {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.65; }
+}
+
+@keyframes twinkleB {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.5; }
+}
+
+#app {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right))
+           max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  overflow-y: auto;
+  z-index: 1;
+  touch-action: manipulation;
+  --board-max: min(570px, calc(100vh - 300px));
+}
+
+@supports (height: 100dvh) {
+  #app {
+    --board-max: min(570px, calc(100dvh - 300px));
+  }
+}
+
+/* ============================================================
+   TOP HEADER — fixed app bar: ★ planet-station title left,
+   coins + shop cart right. Sits above the board, not overlaid
+   on it, matching the reference "TopAppBar" layout.
+   ============================================================ */
+#topHeader {
+  width: 100%;
+  max-width: 520px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  background: linear-gradient(180deg, rgba(24, 24, 46, 0.7), rgba(12, 12, 31, 0.65));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 219, 233, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 0 12px rgba(0, 219, 233, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: clamp(11px, 3vw, 14px);
+  font-weight: 700;
+  color: #00dbe9;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-star {
+  color: #00dbe9;
+  text-shadow: 0 0 8px rgba(0, 219, 233, 0.7);
+  flex-shrink: 0;
+  font-size: 0.85em;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.coin-pill-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(180deg, rgba(46, 40, 20, 0.6), rgba(26, 26, 45, 0.6));
+  border: 1px solid rgba(233, 196, 0, 0.35);
+  border-radius: 999px;
+  padding: 3px 9px 3px 4px;
+  color: #ffd93d;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: clamp(10px, 2.6vw, 12px);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.coin-pill-header.pulse {
+  animation: coinPulse 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes coinPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.22); box-shadow: 0 0 18px rgba(233, 196, 0, 0.6); }
+  100% { transform: scale(1); }
+}
+
+.coin-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3b0, #e9c400 60%, #a17d00 100%);
+  box-shadow: 0 0 5px rgba(233, 196, 0, 0.6);
+  font-size: 9px;
+  font-weight: 800;
+  color: #2b2100;
+}
+
+.cart-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: #b9cacb;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.15s ease, transform 0.15s ease, color 0.15s ease;
+}
+
+.cart-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.cart-btn:active {
+  transform: scale(0.9);
+  background: rgba(0, 219, 233, 0.12);
+  color: #00dbe9;
+}
+
+/* ============================================================
+   STATS ROW — score chip left, level + progress chip right
+   ============================================================ */
+#statsRow {
+  width: 100%;
+  max-width: 520px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.stat-chip {
+  background: rgba(26, 26, 45, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 219, 233, 0.14);
+  border-radius: 9px;
+  padding: 3px 9px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 2.6vw, 12px);
+  font-weight: 700;
+  color: #e2e0fb;
+}
+
+.score-chip {
+  color: #00dbe9;
+}
+
+.level-chip {
+  background: rgba(26, 26, 45, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 219, 233, 0.14);
+  border-radius: 9px;
+  padding: 3px 13px 4px;
+  min-width: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.level-chip-label {
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #b9cacb;
+}
+
+.level-chip-value {
+  font-family: var(--font-mono);
+  font-size: clamp(12px, 3.2vw, 14px);
+  font-weight: 700;
+  color: #00dbe9;
+  white-space: nowrap;
+}
+
+.level-progress-track {
+  margin-top: 4px;
+  width: 100%;
+  min-width: 90px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.level-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: #00dbe9;
+  box-shadow: 0 0 8px rgba(0, 219, 233, 0.7);
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.coin-chip {
+  background: rgba(233, 196, 0, 0.12);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(233, 196, 0, 0.35);
+  color: #e9c400;
+  font-weight: 800;
+  font-size: clamp(13px, 3.2vw, 16px);
+  padding: 7px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.coin-chip.big {
+  font-size: 22px;
+  padding: 8px 20px;
+}
+
+/* ============================================================
+   BOARD
+   ============================================================ */
+#boardWrap {
+  position: relative;
+  width: min(100%, var(--board-max));
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  flex-shrink: 0;
+}
+
+/* premium bezel: a slow-turning aurora halo sitting just behind the
+   board, visible only as a soft glow past the canvas' rounded corners */
+#boardWrap::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 26px;
+  background: conic-gradient(from 0deg, var(--c-cyan), var(--c-violet), var(--c-gold), var(--c-magenta), var(--c-cyan));
+  filter: blur(14px);
+  opacity: 0.35;
+  z-index: -1;
+  animation: bezelTurn 14s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #boardWrap::before { animation: none; }
+}
+
+@keyframes bezelTurn {
+  to { transform: rotate(360deg); }
+}
+
+#boardCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 22px;
+  box-shadow:
+    0 14px 44px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(0, 219, 233, 0.25),
+    0 0 40px rgba(0, 219, 233, 0.22);
+  touch-action: none;
+}
+
+/* toast for "new tier reached" */
+#toast {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translate(-50%, -90%) scale(0.9);
+  background: rgba(20, 10, 50, 0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 3;
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translate(-50%, -130%) scale(1);
+}
+
+/* ============================================================
+   BOTTOM NAV — Undo / Shuffle / Audio. Undo & Audio are stacked
+   icon-over-label buttons; Shuffle sits in the middle as a
+   highlighted, "currently important" pill — same asymmetry as
+   the reference bottom nav.
+   ============================================================ */
+#controls {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 5px 12px max(5px, env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(28, 28, 48, 0.75), rgba(20, 20, 36, 0.75));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 219, 233, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #b9cacb;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.15s ease;
+}
+
+.nav-btn:active {
+  transform: scale(0.9);
+}
+
+.nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.nav-btn-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border-radius: 9px;
+  background: rgba(26, 26, 45, 0.6);
+  border: 1px solid rgba(0, 219, 233, 0.14);
+}
+
+.nav-btn-label {
+  font-size: 8px;
+}
+
+/* Shuffle — the highlighted center pill */
+.nav-btn-primary {
+  flex-direction: row;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(0, 219, 233, 0.18);
+  border: 1px solid rgba(0, 219, 233, 0.4);
+  box-shadow: 0 0 10px rgba(0, 219, 233, 0.3);
+  color: #00dbe9;
+}
+
+.nav-btn-primary .nav-btn-icon {
+  width: auto;
+  height: auto;
+  background: none;
+  border: none;
+  font-size: 11px;
+}
+
+.nav-btn-primary .nav-btn-label {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* short viewports (small/older phones, landscape phones): trim
+   spacing and shrink the D-pad so nothing gets cut off below the fold */
+@media (max-height: 720px) {
+  #app { gap: 4px; }
+  #dpad { transform: scale(0.85); margin: -5px 0; }
+}
+
+@media (max-height: 620px) {
+  #app { gap: 3px; }
+  #dpad { transform: scale(0.65); margin: -16px 0; }
+  #topHeader { padding: 3px 8px; }
+  .level-chip, #controls { padding-top: 2px; padding-bottom: 2px; }
+}
+
+/* ============================================================
+   D-PAD — on-screen arrow buttons for mobile play, alongside
+   swipe and keyboard controls (all three call the same move()).
+   ============================================================ */
+#dpad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(32px, 40px));
+  grid-template-rows: repeat(3, minmax(32px, 40px));
+  grid-template-areas:
+    ".    up    ."
+    "left .     right"
+    ".    down  .";
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.dpad-btn {
+  background: rgba(26, 26, 45, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 219, 233, 0.22);
+  color: #00dbe9;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.dpad-btn:active {
+  transform: scale(0.88);
+  background: rgba(0, 219, 233, 0.22);
+  box-shadow: 0 0 20px rgba(0, 219, 233, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.dpad-up    { grid-area: up; }
+.dpad-down  { grid-area: down; }
+.dpad-left  { grid-area: left; }
+.dpad-right { grid-area: right; }
+
+@media (hover: hover) and (pointer: fine) {
+  .dpad-btn:hover {
+    background: rgba(0, 219, 233, 0.14);
+    box-shadow: 0 4px 14px rgba(0, 219, 233, 0.3);
+  }
+}
+
+/* ============================================================
+   OVERLAYS
+   ============================================================ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  background: rgba(8, 4, 24, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  text-align: center;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+           max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  padding-top: max(15vh, 24px, env(safe-area-inset-top));
+  overflow-y: auto;
+  z-index: 20;
+  animation: overlayIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Menu is lighter than other overlays — the board stays visible behind it
+   so "Play" feels like entering gameplay, not leaving a separate screen. */
+#menuScreen {
+  background: rgba(8, 4, 24, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  justify-content: center;
+}
+
+.quick-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 6px;
+}
+
+.quick-guide-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #d7cfff;
+  background: rgba(0, 219, 233, 0.08);
+  border: 1px solid rgba(0, 219, 233, 0.16);
+  border-radius: 12px;
+  padding: 8px 16px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 7vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #a663cc, #4cc9f0, #f72585, #a663cc);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 34px rgba(166, 99, 204, 0.45);
+  animation: titleShimmer 6s ease-in-out infinite;
+}
+
+@keyframes titleShimmer {
+  0%, 100% { background-position: 0% center; }
+  50% { background-position: 100% center; }
+}
+
+.subtitle {
+  font-size: clamp(13px, 3vw, 16px);
+  color: #d7cfff;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 340px;
+}
+
+.guide-list p {
+  font-size: clamp(13px, 3vw, 15px);
+  color: #d7cfff;
+  line-height: 1.4;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+
+.btn {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 16px 40px;
+  font-family: var(--font-display);
+  font-size: clamp(16px, 4vw, 22px);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  color: #fff;
+  touch-action: manipulation;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease, filter 0.15s ease;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3), 0 8px 24px rgba(166, 99, 204, 0.25);
+}
+
+.btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* glossy top highlight layered above the color fill (background-image
+   layers paint top-to-bottom, so this sits safely behind the label text
+   instead of a ::before, which would otherwise paint over it) */
+.btn-primary {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(135deg, #c185e8 0%, #7c5cf0 50%, #4361ee 100%);
+}
+
+.btn-secondary {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(135deg, #5bd8f5 0%, #4895ef 100%);
+  font-size: clamp(14px, 3.2vw, 18px);
+  padding: 12px 30px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 0 rgba(0, 0, 0, 0.3), 0 12px 28px rgba(166, 99, 204, 0.4);
+  }
+  .btn:hover:active {
+    transform: translateY(2px);
+  }
+}
+
+/* signature touch: a slow ambient glow breathing on the primary CTA only,
+   so the eye lands on "Play" without any competing motion elsewhere */
+#startBtn {
+  animation: ctaBreathe 3.2s ease-in-out infinite;
+}
+
+@keyframes ctaBreathe {
+  0%, 100% { box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3), 0 8px 24px rgba(166, 99, 204, 0.25); }
+  50%      { box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3), 0 10px 38px rgba(124, 92, 240, 0.55); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #startBtn { animation: none; }
+}
+
+/* ============================================================
+   SHOP
+   ============================================================ */
+#shopItems {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  padding: 10px 12px;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.shop-item-icon {
+  font-size: 26px;
+  width: 40px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.shop-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.shop-item-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+
+.shop-item-desc {
+  font-size: 11px;
+  color: #b8b0d9;
+  margin-top: 2px;
+}
+
+.shop-buy-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #1a1246;
+  background: linear-gradient(135deg, #ffe680, #ffb84d);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+}
+
+.shop-buy-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.shop-buy-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shop-item:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  .shop-buy-btn:not(:disabled):hover {
+    box-shadow: 0 4px 14px rgba(255, 184, 77, 0.45);
+    transform: translateY(-1px);
+  }
+}
+
+.hidden {
+  display: none !important;
+}
+</style>
+</head>
+<body>
+
+  <div id="app">
+
+    <header id="topHeader">
+      <div class="header-brand">
+        <span class="header-star">★</span>
+        <span id="stationTitle">Earth Station</span>
+      </div>
+      <div class="header-right">
+        <button id="shopBtn" class="coin-pill-header" aria-label="Shop">
+          <span class="coin-dot">$</span><span id="coinsVal">0</span>
+        </button>
+        <button id="shopBtnCart" class="cart-btn" aria-label="Open shop">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        </button>
+        <button id="vibeBtn" class="cart-btn" aria-label="Toggle vibration"><span class="vibe-icon">📳</span></button>
+      </div>
+    </header>
+
+    <div id="statsRow">
+      <div class="stat-chip score-chip">⭐ <span id="scoreVal">0</span></div>
+      <div class="level-chip">
+        <span class="level-chip-label">LEVEL</span>
+        <span class="level-chip-value"><span id="levelVal">1</span> / <span id="levelTotal">10</span></span>
+        <div class="level-progress-track"><div class="level-progress-fill" id="levelProgressFill"></div></div>
+      </div>
+    </div>
+
+    <div id="boardWrap">
+      <canvas id="boardCanvas" width="480" height="480"></canvas>
+
+      <div id="toast"></div>
+
+      <!-- ===== Main Menu (doubles as onboarding — one click straight into gameplay) ===== -->
+      <div id="menuScreen" class="overlay">
+        <h1 class="title">Earth Station</h1>
+        <div class="quick-guide">
+          <div class="quick-guide-row">👆 <span>Swipe or arrow keys</span></div>
+          <div class="quick-guide-row">🪐 <span>Match 2 planets to merge</span></div>
+          <div class="quick-guide-row">🌍 <span>Fill the board to clear a level</span></div>
+        </div>
+        <button id="startBtn" class="btn btn-primary">▶ Play</button>
+      </div>
+
+      <!-- ===== Game Over ===== -->
+      <div id="gameOverScreen" class="overlay hidden">
+        <h1 class="title">Game Over</h1>
+        <p class="subtitle">No more moves left.</p>
+        <p class="subtitle">Score: <strong id="finalScore">0</strong> &nbsp;·&nbsp; Best: <strong id="finalBest">0</strong></p>
+        <button id="restartBtn" class="btn btn-primary">↻ Play Again</button>
+      </div>
+
+      <!-- ===== Level Complete ===== -->
+      <div id="levelCompleteScreen" class="overlay hidden">
+        <h1 class="title" id="levelCompleteIcon">🌍 Level 1 Complete!</h1>
+        <p class="subtitle" id="levelCompleteSubtitle">Every cell reached 32 — Earth conquered!</p>
+        <div class="coin-chip big">+<span id="levelCompleteReward">25</span> 🪙</div>
+        <button id="nextLevelBtn" class="btn btn-primary">Next Level ▶</button>
+      </div>
+
+      <!-- ===== Win ===== -->
+      <div id="winScreen" class="overlay hidden">
+        <h1 class="title">🌀 Galaxy Master!</h1>
+        <p class="subtitle">You filled the whole board all the way to Wormhole (16384) across all 10 levels! Keep going for more score and coins, or start a fresh run.</p>
+        <button id="continueBtn" class="btn btn-primary">Keep Playing</button>
+        <button id="newAfterWinBtn" class="btn btn-secondary">↻ New Game</button>
+      </div>
+
+      <!-- ===== Shop ===== -->
+      <div id="shopScreen" class="overlay hidden">
+        <h1 class="title">🛒 Shop</h1>
+        <div class="coin-chip big">🪙 <span id="shopCoins">0</span></div>
+        <div id="shopItems"></div>
+        <button id="closeShopBtn" class="btn btn-secondary">Close</button>
+      </div>
+
+    </div>
+
+    <div id="dpad" aria-label="Move controls">
+      <button id="dpadUp" class="dpad-btn dpad-up" aria-label="Move up">▲</button>
+      <button id="dpadLeft" class="dpad-btn dpad-left" aria-label="Move left">◀</button>
+      <button id="dpadRight" class="dpad-btn dpad-right" aria-label="Move right">▶</button>
+      <button id="dpadDown" class="dpad-btn dpad-down" aria-label="Move down">▼</button>
+    </div>
+
+    <nav id="controls">
+      <button id="undoBtn" class="nav-btn">
+        <span class="nav-btn-icon">↩</span>
+        <span class="nav-btn-label">Undo <span id="undoCount">2</span></span>
+      </button>
+      <button id="shuffleBtn" class="nav-btn nav-btn-primary">
+        <span class="nav-btn-icon">🔀</span>
+        <span class="nav-btn-label">Shuffle <span id="shuffleCount">0</span></span>
+      </button>
+      <button id="soundBtn" class="nav-btn">
+        <span class="nav-btn-icon">🔊</span>
+        <span class="nav-btn-label">Audio</span>
+      </button>
+    </nav>
+
+  </div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const SIZE = 4;
+const ANIM_MS = 130;
+const POP_MS = 160;
+const STORAGE_KEY = "cosmicMergeBest";
+
+// Celestial tiers: each merge level has its own color + icon,
+// which is the visual/thematic twist that sets this apart from
+// a plain numbers-only merge grid.
+const TIERS = [
+  { value: 2,    name: "Asteroid",  icon: "🪨", c1: "#9aa3b2", c2: "#4a4e69" },
+  { value: 4,    name: "Moon",      icon: "🌕", c1: "#fff2c2", c2: "#e0b94d" },
+  { value: 8,    name: "Mercury",   icon: "🌑", c1: "#d7bfae", c2: "#8d7b74" },
+  { value: 16,   name: "Venus",     icon: "🌟", c1: "#ffe08a", c2: "#ff9a3d" },
+  { value: 32,   name: "Earth",     icon: "🌍", c1: "#6fd3ff", c2: "#1976d2" },
+  { value: 64,   name: "Mars",      icon: "🔴", c1: "#ff8a65", c2: "#c1440e" },
+  { value: 128,  name: "Jupiter",   icon: "🪐", c1: "#f7b267", c2: "#c9622d" },
+  { value: 256,  name: "Saturn",    icon: "💫", c1: "#ffe680", c2: "#e8a53a" },
+  { value: 512,  name: "Uranus",    icon: "💠", c1: "#8ef0ff", c2: "#3aa6b9" },
+  { value: 1024, name: "Neptune",   icon: "🔵", c1: "#5c7cfa", c2: "#3a0ca3" },
+  { value: 2048, name: "Sun",       icon: "☀️", c1: "#fff275", c2: "#ff8c42" },
+  { value: 4096, name: "Black Hole",icon: "🕳️", c1: "#5a5a7a", c2: "#050014" },
+  { value: 8192, name: "Nebula",    icon: "🌌", c1: "#c599ff", c2: "#4d2d7d" },
+  { value: 16384,name: "Wormhole",  icon: "🌀", c1: "#ff9de2", c2: "#7d2d6b" }
+];
+function tierFor(value) {
+  return TIERS.find((t) => t.value === value) || TIERS[TIERS.length - 1];
+}
+
+// 10 levels, each with its own "cosmic cap": Level 1's cap is 32 (Earth),
+// Level 2's is 64 (Mars), Level 3's is 128 (Jupiter) ... doubling each
+// time up to Level 10's 16384 (Wormhole). Within a level, two tiles at
+// that level's cap can't merge any further — they behave like a wall,
+// the same way a blocker does. A level only completes once EVERY one of
+// the 16 cells on the board holds that level's cap value.
+const LEVEL_REWARDS = [25, 60, 110, 200, 350, 600, 1000, 1600, 2600, 4200];
+const LEVELS = TIERS.slice(4, 14).map((t, i) => ({
+  level: i + 1,
+  target: t.value,
+  name: t.name,
+  icon: t.icon,
+  reward: LEVEL_REWARDS[i],
+  cellsRequired: i === 0 ? 12 : SIZE * SIZE
+}));
+
+// The active merge cap always tracks the current level. Once the final
+// level is finished, the cap just stays at the last level's value.
+function getCurrentCap() {
+  const lvl = LEVELS[currentLevelIndex] || LEVELS[LEVELS.length - 1];
+  return lvl.target;
+}
+
+const VECTORS = {
+  up:    { r: -1, c: 0 },
+  down:  { r: 1,  c: 0 },
+  left:  { r: 0,  c: -1 },
+  right: { r: 0,  c: 1 }
+};
+
+/* ============================================================
+   AUDIO (synthesized — no files to load, keeps the game light)
+   ============================================================ */
+let audioCtx = null;
+let soundEnabled = true;
+let vibrationEnabled = true;
+
+function ensureAudio() {
+  if (!audioCtx) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new Ctx();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+}
+
+function playTone(freq, duration, type, volume) {
+  if (!soundEnabled) return;
+  ensureAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+const sfx = {
+  move: () => playTone(180, 0.05, "sine", 0.04),
+  merge: (tierIndex) => playTone(300 + tierIndex * 55, 0.16, "triangle", 0.14),
+  newTile: () => playTone(500, 0.05, "sine", 0.03),
+  gameOver: () => {
+    playTone(200, 0.4, "sawtooth", 0.13);
+    setTimeout(() => playTone(130, 0.5, "sawtooth", 0.11), 140);
+  },
+  win: () => {
+    [523, 659, 784, 1046].forEach((f, i) =>
+      setTimeout(() => playTone(f, 0.22, "sine", 0.14), i * 110)
+    );
+  },
+  levelUp: () => {
+    [660, 880].forEach((f, i) => setTimeout(() => playTone(f, 0.15, "sine", 0.13), i * 90));
+  }
+};
+
+// Haptic feedback — a small, free "feels good" touch on real phones.
+// navigator.vibrate silently doesn't exist on iOS Safari and some browsers,
+// so this is guarded and always safe to call.
+function vibrate(pattern) {
+  if (!vibrationEnabled) return;
+  try {
+    navigator.vibrate?.(pattern);
+  } catch (e) {
+    /* unsupported — no-op */
+  }
+}
+
+/* ============================================================
+   GAME STATE
+   ============================================================ */
+const canvas = document.getElementById("boardCanvas");
+const ctx = canvas.getContext("2d");
+const CANVAS_SIZE = 480;
+const PAD = 16;
+const GAP = 10;
+const CELL = (CANVAS_SIZE - PAD * 2 - GAP * (SIZE - 1)) / SIZE;
+
+// Render at native device resolution (retina/high-DPI phones default to
+// devicePixelRatio 2-3) so the board looks crisp instead of upscaled/blurry.
+// All existing drawing code keeps using the 0–480 logical coordinate space;
+// this scale factor is applied once and is otherwise invisible to it.
+(function setupHiDPICanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  canvas.width = CANVAS_SIZE * dpr;
+  canvas.height = CANVAS_SIZE * dpr;
+  ctx.scale(dpr, dpr);
+})();
+
+// localStorage can throw (opaque/sandboxed iframe origins, privacy modes),
+// which CrazyGames' embedding can trigger — never let that crash the game.
+function loadBest() {
+  try {
+    return Number(localStorage.getItem(STORAGE_KEY) || 0);
+  } catch (e) {
+    return 0;
+  }
+}
+function persistBest(value) {
+  try {
+    localStorage.setItem(STORAGE_KEY, String(value));
+  } catch (e) {
+    /* storage unavailable — best score just won't persist across sessions */
+  }
+}
+
+// Coins and shop inventory persist across sessions independently of
+// score/best — same defensive try/catch pattern as loadBest/persistBest.
+const COINS_KEY = "cosmicMergeCoins";
+const INVENTORY_KEY = "cosmicMergeInventory";
+const UNDO_UPGRADE_MAX = 5;
+const SHUFFLE_COST = 25;
+
+function loadCoins() {
+  try {
+    return Number(localStorage.getItem(COINS_KEY) || 0);
+  } catch (e) {
+    return 0;
+  }
+}
+function persistCoins() {
+  try {
+    localStorage.setItem(COINS_KEY, String(coins));
+  } catch (e) {
+    /* storage unavailable */
+  }
+}
+function loadInventory() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(INVENTORY_KEY) || "null");
+    if (raw && typeof raw.shuffle === "number" && typeof raw.undoUpgrades === "number") return raw;
+  } catch (e) {
+    /* fall through to default */
+  }
+  return { shuffle: 0, undoUpgrades: 0 };
+}
+function persistInventory() {
+  try {
+    localStorage.setItem(INVENTORY_KEY, JSON.stringify(inventory));
+  } catch (e) {
+    /* storage unavailable */
+  }
+}
+
+let tiles = [];          // flat list of live tile objects
+let nextId = 1;
+let score = 0;
+let best = loadBest();
+let coins = loadCoins();
+let inventory = loadInventory();
+let currentLevelIndex = 0;
+let undosLeft = 3;
+let shopOpen = false;
+let levelPopupOpen = false;
+let previousOverlay = null;
+let history = [];        // snapshots for undo
+let animating = false;
+let hasWon = false;
+let continueAfterWin = false;
+let gameOver = false;
+let particles = [];
+let popups = [];         // floating "+score" text
+let lastTime = 0;
+let toastQueue = [];
+let toastShowing = false;
+let shakeTime = 0;
+let shakeMagnitude = 0;
+
+function triggerShake(magnitude, duration) {
+  shakeMagnitude = magnitude;
+  shakeTime = duration;
+}
+
+function cellTopLeft(row, col) {
+  return { x: PAD + col * (CELL + GAP), y: PAD + row * (CELL + GAP) };
+}
+function cellCenter(row, col) {
+  const p = cellTopLeft(row, col);
+  return { x: p.x + CELL / 2, y: p.y + CELL / 2 };
+}
+
+/* ---------- board helpers ---------- */
+
+function buildGrid() {
+  const grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+  for (const t of tiles) grid[t.row][t.col] = t;
+  return grid;
+}
+
+function withinBounds(pos) {
+  return pos.row >= 0 && pos.row < SIZE && pos.col >= 0 && pos.col < SIZE;
+}
+
+function cellContent(grid, pos) {
+  return withinBounds(pos) ? grid[pos.row][pos.col] : null;
+}
+
+/**
+ * The one source of truth for "can these two tiles merge?" — used both
+ * when actually performing a move and when scanning for game-over, so the
+ * 64 cap and Star-wildcard rules can never drift out of sync between them.
+ */
+function canTilesMerge(a, b) {
+  if (!a || !b || a.isBlocker || b.isBlocker) return false;
+  const cap = getCurrentCap();
+  if (a.value === b.value) return a.value * 2 <= cap;
+  return false;
+}
+
+function prospectiveMergeValue(a, b) {
+  return a.value * 2;
+}
+
+function findFarthestPosition(grid, cell, vector) {
+  let previous;
+  let next = cell;
+  do {
+    previous = next;
+    next = { row: previous.row + vector.r, col: previous.col + vector.c };
+  } while (withinBounds(next) && !cellContent(grid, next));
+  return { farthest: previous, next };
+}
+
+function buildTraversals(vector) {
+  const rows = [], cols = [];
+  for (let i = 0; i < SIZE; i++) { rows.push(i); cols.push(i); }
+  if (vector.r === 1) rows.reverse();
+  if (vector.c === 1) cols.reverse();
+  return { rows, cols };
+}
+
+/* ---------- snapshot for undo ---------- */
+function snapshot() {
+  return {
+    tiles: tiles.map((t) => ({
+      id: t.id, value: t.value, row: t.row, col: t.col,
+      isBlocker: !!t.isBlocker, blockerTimer: t.blockerTimer || 0
+    })),
+    score
+  };
+}
+
+function restoreSnapshot(snap) {
+  tiles = snap.tiles.map((t) => {
+    const p = cellCenter(t.row, t.col);
+    return {
+      id: t.id, value: t.value, row: t.row, col: t.col, x: p.x, y: p.y, scale: 1,
+      isBlocker: t.isBlocker, blockerTimer: t.blockerTimer
+    };
+  });
+  score = snap.score;
+  nextId = Math.max(1, ...tiles.map((t) => t.id + 1), nextId);
+}
+
+/* ---------- core move logic ---------- */
+
+function move(direction) {
+  if (animating || gameOver || shopOpen || levelPopupOpen) return;
+  const vector = VECTORS[direction];
+  const traversals = buildTraversals(vector);
+  const grid = buildGrid();
+
+  for (const t of tiles) t._justMerged = false;
+
+  let moved = false;
+  let scoreGain = 0;
+  let mergeCount = 0;
+  const slideAnims = [];   // { tile, toRow, toCol }
+  const mergeEvents = [];  // { row, col, value, tierIndex }
+  const removedIds = [];
+
+  for (const row of traversals.rows) {
+    for (const col of traversals.cols) {
+      const cell = { row, col };
+      const tile = cellContent(grid, cell);
+      if (!tile) continue;
+
+      const { farthest, next } = findFarthestPosition(grid, cell, vector);
+      const nextTile = cellContent(grid, next);
+      const canMerge = nextTile && !nextTile._justMerged && canTilesMerge(tile, nextTile);
+
+      if (canMerge) {
+        const mergedValue = prospectiveMergeValue(tile, nextTile);
+
+        slideAnims.push({ tile, toRow: next.row, toCol: next.col });
+        grid[tile.row][tile.col] = null;
+        nextTile.value = mergedValue;
+        nextTile._justMerged = true;
+        nextTile._pop = true;
+        removedIds.push(tile.id);
+        scoreGain += mergedValue;
+        mergeCount++;
+        moved = true;
+        const tierIdx = TIERS.findIndex((t) => t.value === mergedValue);
+        mergeEvents.push({ row: next.row, col: next.col, value: mergedValue, tierIndex: tierIdx });
+      } else if (!positionsEqual(cell, farthest)) {
+        slideAnims.push({ tile, toRow: farthest.row, toCol: farthest.col });
+        grid[tile.row][tile.col] = null;
+        grid[farthest.row][farthest.col] = tile;
+        tile.row = farthest.row;
+        tile.col = farthest.col;
+        moved = true;
+      }
+    }
+  }
+
+  if (!moved) return; // illegal move, ignore
+
+  history.push(snapshot());
+  if (history.length > 10) history.shift();
+
+  score += scoreGain + (mergeCount > 1 ? mergeCount * 5 : 0);
+  if (mergeCount > 0) {
+    // play a staggered merge sound per merge event, using the merged tile's tier index
+    mergeEvents.forEach((ev, i) => {
+      const idx = typeof ev.tierIndex === "number" && ev.tierIndex >= 0 ? ev.tierIndex : 0;
+      setTimeout(() => sfx.merge(idx), i * 70);
+    });
+    vibrate(mergeCount > 1 ? [15, 30, 15] : 12);
+  } else {
+    sfx.move();
+  }
+
+  if (mergeCount > 1) {
+    popups.push({ x: CANVAS_SIZE / 2, y: CANVAS_SIZE / 2, text: `COMBO x${mergeCount}!`, age: 0, big: true });
+  }
+  if (mergeCount >= 3) {
+    triggerShake(7, 0.18);
+  }
+
+  animating = true;
+  const start = performance.now();
+
+  for (const a of slideAnims) {
+    a.tile.fromX = a.tile.x;
+    a.tile.fromY = a.tile.y;
+    const p = cellCenter(a.toRow, a.toCol);
+    a.tile.toX = p.x;
+    a.tile.toY = p.y;
+    a.tile.animStart = start;
+  }
+
+  function tick(now) {
+    const t = Math.min(1, (now - start) / ANIM_MS);
+    const eased = 1 - Math.pow(1 - t, 3);
+    for (const a of slideAnims) {
+      a.tile.x = a.tile.fromX + (a.tile.toX - a.tile.fromX) * eased;
+      a.tile.y = a.tile.fromY + (a.tile.toY - a.tile.fromY) * eased;
+    }
+    if (t < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      finishMove(removedIds, mergeEvents);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+function positionsEqual(a, b) {
+  return a.row === b.row && a.col === b.col;
+}
+
+function finishMove(removedIds, mergeEvents) {
+  tiles = tiles.filter((t) => !removedIds.includes(t.id));
+
+  for (const ev of mergeEvents) {
+    const center = cellCenter(ev.row, ev.col);
+    spawnParticles(center.x, center.y, tierFor(ev.value).c1, 14);
+    popups.push({ x: center.x, y: center.y, text: "+" + ev.value, age: 0 });
+    const target = tiles.find((t) => t.row === ev.row && t.col === ev.col);
+    if (target) { target._popStart = performance.now(); target.scale = 1.25; }
+  }
+
+  tickBlockers();
+  spawnRandomTile();
+  updateHUD();
+  if (!checkLevelComplete()) {
+    checkGameState();
+  }
+  animating = false;
+}
+
+/** Meteor blockers count down each move, then crumble into a normal tile. */
+function tickBlockers() {
+  for (const t of tiles) {
+    if (!t.isBlocker) continue;
+    t.blockerTimer--;
+    if (t.blockerTimer <= 0) {
+      t.isBlocker = false;
+      t.value = 2;
+      t._popStart = performance.now();
+      t._spawn = true;
+    }
+  }
+}
+
+function spawnRandomTile() {
+  const occupied = new Set(tiles.map((t) => `${t.row},${t.col}`));
+  const empty = [];
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (!occupied.has(`${r},${c}`)) empty.push({ row: r, col: c });
+    }
+  }
+  if (empty.length === 0) return;
+  const pos = empty[Math.floor(Math.random() * empty.length)];
+  const p = cellCenter(pos.row, pos.col);
+
+  // Meteors stay a real obstacle but ease off the earlier extreme ramp so
+  // they add tension without feeling punishing. Level 1 is meteor-free so
+  // new players can learn the merge mechanic without extra pressure.
+  const blockerChance = currentLevelIndex === 0 ? 0 : Math.min(0.07 + currentLevelIndex * 0.02, 0.26);
+  const blockerLifespan = 3 + Math.min(2, Math.floor(currentLevelIndex / 3));
+
+  const roll = Math.random();
+  if (roll < blockerChance) {
+    tiles.push({
+      id: nextId++, value: -1, row: pos.row, col: pos.col,
+      x: p.x, y: p.y, scale: 0, _popStart: performance.now(), _spawn: true,
+      isBlocker: true, blockerTimer: blockerLifespan
+    });
+  } else {
+    const r = Math.random();
+    const value = r < 0.7 ? 2 : r < 0.92 ? 4 : 8;
+    tiles.push({
+      id: nextId++, value, row: pos.row, col: pos.col,
+      x: p.x, y: p.y, scale: 0, _popStart: performance.now(), _spawn: true
+    });
+  }
+  sfx.newTile();
+}
+
+/** Returns true if a level just completed (caller should skip the normal
+ *  game-state/game-over check for this move when that happens). */
+function checkLevelComplete() {
+  const lvl = LEVELS[currentLevelIndex];
+  if (!lvl) return false;
+  // The level only clears once EVERY one of the 16 cells on the board
+  // holds this level's cap value.
+  const reached = tiles.filter((t) => t.value === lvl.target).length;
+  if (reached < lvl.cellsRequired) return false;
+
+  coins += lvl.reward;
+  persistCoins();
+  sfx.levelUp();
+  vibrate([20, 40, 20, 40, 30]);
+  pulseCoinChip();
+
+  const nextLvl = LEVELS[currentLevelIndex + 1];
+  levelPopupOpen = true;
+  document.getElementById("levelCompleteIcon").textContent = `${lvl.icon} Level ${lvl.level} Complete!`;
+  document.getElementById("levelCompleteSubtitle").textContent =
+    `Fill ${lvl.cellsRequired} cells with ${lvl.target} — ${lvl.name} conquered!`;
+  document.getElementById("levelCompleteReward").textContent = lvl.reward;
+  document.getElementById("nextLevelBtn").textContent = nextLvl ? "Next Level ▶" : "See Results 🏆";
+  document.getElementById("levelCompleteScreen").classList.remove("hidden");
+  updateHUD();
+  return true;
+}
+
+/** Called when the player taps "Next Level" on the popup — advances the
+ *  level counter, clears the board for the new cap, and resumes play. */
+function advanceToNextLevel() {
+  document.getElementById("levelCompleteScreen").classList.add("hidden");
+  levelPopupOpen = false;
+  currentLevelIndex++;
+
+  const nextLvl = LEVELS[currentLevelIndex];
+  if (nextLvl) {
+    tiles = [];
+    spawnRandomTile();
+    spawnRandomTile();
+    updateHUD();
+  } else {
+    // That was the final level — this is the real win condition now.
+    hasWon = true;
+    sfx.win();
+    document.getElementById("winScreen").classList.remove("hidden");
+    saveBest();
+  }
+}
+
+/** Toasts queue up so multiple celebrations firing on the same move (e.g.
+ *  a level-up alongside a star bonus) don't overwrite each other. */
+function queueToast(text, duration = 2200) {
+  toastQueue.push({ text, duration });
+  if (!toastShowing) showNextToast();
+}
+
+function showNextToast() {
+  if (toastQueue.length === 0) {
+    toastShowing = false;
+    return;
+  }
+  toastShowing = true;
+  const item = toastQueue.shift();
+  const toast = document.getElementById("toast");
+  toast.textContent = item.text;
+  toast.classList.add("show");
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(showNextToast, 250);
+  }, item.duration);
+}
+
+function pulseCoinChip() {
+  const chips = document.querySelectorAll(".coin-pill-header");
+  chips.forEach((chip) => {
+    chip.classList.remove("pulse");
+    // force reflow so the animation can restart if it's already running
+    void chip.offsetWidth;
+    chip.classList.add("pulse");
+  });
+}
+
+/* ---------- particles ---------- */
+function spawnParticles(x, y, color, count = 14) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 60 + Math.random() * 160;
+    particles.push({
+      x, y, color,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: 2 + Math.random() * 3,
+      life: 0.4 + Math.random() * 0.3,
+      age: 0
+    });
+  }
+}
+
+/* ---------- game state checks ---------- */
+function checkGameState() {
+  if (tiles.length < SIZE * SIZE) return;
+
+  const grid = buildGrid();
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const cell = grid[r][c];
+      const right = grid[r][c + 1];
+      const down = grid[r + 1] ? grid[r + 1][c] : null;
+      if (c + 1 < SIZE && canTilesMerge(cell, right)) return;
+      if (r + 1 < SIZE && down && canTilesMerge(cell, down)) return;
+    }
+  }
+  triggerGameOver();
+}
+
+function triggerGameOver() {
+  gameOver = true;
+  sfx.gameOver();
+  vibrate([40, 50, 40, 50, 80]);
+  saveBest();
+  document.getElementById("finalScore").textContent = score;
+  document.getElementById("finalBest").textContent = Math.max(best, score);
+  document.getElementById("gameOverScreen").classList.remove("hidden");
+  try { window.CrazyGames.SDK.game.gameplayStop(); } catch (e) {}
+}
+
+function saveBest() {
+  if (score > best) {
+    best = score;
+    persistBest(best);
+  }
+  updateHUD();
+}
+
+function updateHUD() {
+  document.getElementById("scoreVal").textContent = score;
+  document.getElementById("coinsVal").textContent = coins;
+  document.getElementById("undoCount").textContent = undosLeft;
+  document.getElementById("undoBtn").disabled = undosLeft <= 0 || history.length === 0;
+  document.getElementById("shuffleCount").textContent = inventory.shuffle;
+  document.getElementById("shuffleBtn").disabled = inventory.shuffle <= 0;
+
+  document.getElementById("levelVal").textContent = Math.min(currentLevelIndex + 1, LEVELS.length);
+  document.getElementById("levelTotal").textContent = LEVELS.length;
+  const nextLevel = LEVELS[currentLevelIndex];
+  if (nextLevel) {
+    document.getElementById("stationTitle").textContent = `${nextLevel.name} Station`;
+    const filled = tiles.filter((t) => t.value === nextLevel.target).length;
+    const pct = Math.min(100, Math.round((filled / nextLevel.cellsRequired) * 100));
+    document.getElementById("levelProgressFill").style.width = pct + "%";
+  } else {
+    document.getElementById("stationTitle").textContent = "Galaxy Master 🏆";
+    document.getElementById("levelProgressFill").style.width = "100%";
+  }
+  const vibeIcon = document.querySelector('#vibeBtn .vibe-icon');
+  if (vibeIcon) vibeIcon.textContent = vibrationEnabled ? "📳" : "📴";
+}
+
+/* ============================================================
+   NEW GAME / RESTART
+   ============================================================ */
+function newGame() {
+  tiles = [];
+  nextId = 1;
+  score = 0;
+  currentLevelIndex = 0;
+  undosLeft = 2 + inventory.undoUpgrades; // free undos + any permanent upgrades bought in the shop
+  history = [];
+  animating = false;
+  hasWon = false;
+  continueAfterWin = false;
+  gameOver = false;
+  levelPopupOpen = false;
+  particles = [];
+  popups = [];
+  spawnRandomTile();
+  spawnRandomTile();
+  updateHUD();
+}
+
+// One click on "Play" goes straight into gameplay — no separate guide
+// screen/second click. The quick-guide (icons, no paragraphs) lives
+// directly on the menu itself so onboarding happens in a single tap,
+// per CrazyGames' "max 1 click to gameplay" requirement.
+function handlePlayClicked() {
+  startGame();
+}
+
+function startGame() {
+  newGame();
+  document.getElementById("menuScreen").classList.add("hidden");
+  document.getElementById("gameOverScreen").classList.add("hidden");
+  document.getElementById("winScreen").classList.add("hidden");
+  document.getElementById("levelCompleteScreen").classList.add("hidden");
+  try { window.CrazyGames.SDK.game.gameplayStart(); } catch (e) {}
+  lastTime = performance.now();
+  requestAnimationFrame(loop);
+}
+
+/* ============================================================
+   POWER-UPS & SHOP
+   ============================================================ */
+function useShuffle() {
+  if (inventory.shuffle <= 0 || animating || gameOver || shopOpen || levelPopupOpen) return;
+  inventory.shuffle--;
+  persistInventory();
+
+  // Reshuffle full tile identities (value + blocker state) among
+  // currently-occupied cells only — positions stay filled/empty as before.
+  const descriptors = tiles.map((t) => ({
+    value: t.value, isBlocker: !!t.isBlocker, blockerTimer: t.blockerTimer || 0
+  }));
+  for (let i = descriptors.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [descriptors[i], descriptors[j]] = [descriptors[j], descriptors[i]];
+  }
+  tiles.forEach((t, i) => {
+    t.value = descriptors[i].value;
+    t.isBlocker = descriptors[i].isBlocker;
+    t.blockerTimer = descriptors[i].blockerTimer;
+    t._popStart = performance.now();
+    t._spawn = false;
+  });
+
+  sfx.newTile();
+  updateHUD();
+  checkGameState(); // a stuck board may become playable again after reshuffling
+}
+
+function undoUpgradeCost() {
+  return 40 + inventory.undoUpgrades * 30;
+}
+
+function buyShuffle() {
+  if (coins < SHUFFLE_COST) return;
+  coins -= SHUFFLE_COST;
+  inventory.shuffle++;
+  persistCoins();
+  persistInventory();
+  updateHUD();
+  renderShop();
+}
+
+function buyUndoUpgrade() {
+  if (inventory.undoUpgrades >= UNDO_UPGRADE_MAX) return;
+  const cost = undoUpgradeCost();
+  if (coins < cost) return;
+  coins -= cost;
+  inventory.undoUpgrades++;
+  undosLeft++; // takes effect immediately in the current game too
+  persistCoins();
+  persistInventory();
+  updateHUD();
+  renderShop();
+}
+
+function renderShop() {
+  document.getElementById("shopCoins").textContent = coins;
+  const undoMaxed = inventory.undoUpgrades >= UNDO_UPGRADE_MAX;
+  const undoCost = undoUpgradeCost();
+  document.getElementById("shopItems").innerHTML = `
+    <div class="shop-item">
+      <div class="shop-item-icon">🔀</div>
+      <div class="shop-item-info">
+        <div class="shop-item-name">Shuffle Charge</div>
+        <div class="shop-item-desc">Reshuffle the board when you're stuck. Owned: ${inventory.shuffle}</div>
+      </div>
+      <button class="shop-buy-btn" data-action="buyShuffle" ${coins >= SHUFFLE_COST ? "" : "disabled"}>${SHUFFLE_COST} 🪙</button>
+    </div>
+    <div class="shop-item">
+      <div class="shop-item-icon">↩➕</div>
+      <div class="shop-item-info">
+        <div class="shop-item-name">Extra Undo Slot</div>
+        <div class="shop-item-desc">+1 free undo every game. Owned: ${inventory.undoUpgrades}/${UNDO_UPGRADE_MAX}</div>
+      </div>
+      <button class="shop-buy-btn" data-action="buyUndo" ${undoMaxed || coins < undoCost ? "disabled" : ""}>${undoMaxed ? "Maxed" : undoCost + " 🪙"}</button>
+    </div>
+  `;
+}
+
+function openShop() {
+  ["menuScreen", "gameOverScreen", "winScreen"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el.classList.contains("hidden")) {
+      previousOverlay = id;
+      el.classList.add("hidden");
+    }
+  });
+  shopOpen = true;
+  renderShop();
+  document.getElementById("shopScreen").classList.remove("hidden");
+}
+
+function closeShop() {
+  document.getElementById("shopScreen").classList.add("hidden");
+  shopOpen = false;
+  if (previousOverlay) {
+    document.getElementById(previousOverlay).classList.remove("hidden");
+    previousOverlay = null;
+  }
+}
+
+document.getElementById("shopItems").addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  if (btn.dataset.action === "buyShuffle") buyShuffle();
+  else if (btn.dataset.action === "buyUndo") buyUndoUpgrade();
+});
+document.getElementById("shopBtn").addEventListener("click", openShop);
+document.getElementById("shopBtnCart").addEventListener("click", openShop);
+document.getElementById("closeShopBtn").addEventListener("click", closeShop);
+document.getElementById("shuffleBtn").addEventListener("click", useShuffle);
+
+/* ============================================================
+   INPUT: keyboard, swipe, on-screen d-pad
+   ============================================================ */
+window.addEventListener("keydown", (e) => {
+  const map = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
+                w: "up", s: "down", a: "left", d: "right" };
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (map[key]) {
+    e.preventDefault();
+    move(map[key]);
+  }
+});
+
+let touchStart = null;
+canvas.addEventListener("touchstart", (e) => {
+  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}, { passive: true });
+
+canvas.addEventListener("touchend", (e) => {
+  if (!touchStart) return;
+  const dx = e.changedTouches[0].clientX - touchStart.x;
+  const dy = e.changedTouches[0].clientY - touchStart.y;
+  const absX = Math.abs(dx), absY = Math.abs(dy);
+  if (Math.max(absX, absY) < 24) { touchStart = null; return; } // too small, ignore tap
+  if (absX > absY) move(dx > 0 ? "right" : "left");
+  else move(dy > 0 ? "down" : "up");
+  touchStart = null;
+}, { passive: true });
+
+document.getElementById("dpadUp").addEventListener("click", () => move("up"));
+document.getElementById("dpadDown").addEventListener("click", () => move("down"));
+document.getElementById("dpadLeft").addEventListener("click", () => move("left"));
+document.getElementById("dpadRight").addEventListener("click", () => move("right"));
+
+document.getElementById("undoBtn").addEventListener("click", () => {
+  if (undosLeft <= 0 || history.length === 0 || animating) return;
+  const snap = history.pop();
+  restoreSnapshot(snap);
+  undosLeft--;
+  updateHUD();
+});
+
+document.getElementById("soundBtn").addEventListener("click", (e) => {
+  soundEnabled = !soundEnabled;
+  const icon = e.currentTarget.querySelector('.nav-btn-icon');
+  if (icon) icon.textContent = soundEnabled ? "🔊" : "🔇";
+});
+
+document.getElementById("vibeBtn").addEventListener("click", (e) => {
+  vibrationEnabled = !vibrationEnabled;
+  const icon = e.currentTarget.querySelector('.vibe-icon');
+  if (icon) icon.textContent = vibrationEnabled ? "📳" : "📴";
+});
+
+document.getElementById("startBtn").addEventListener("click", handlePlayClicked);
+document.getElementById("restartBtn").addEventListener("click", startGame);
+document.getElementById("newAfterWinBtn").addEventListener("click", startGame);
+document.getElementById("nextLevelBtn").addEventListener("click", advanceToNextLevel);
+document.getElementById("continueBtn").addEventListener("click", () => {
+  continueAfterWin = true;
+  document.getElementById("winScreen").classList.add("hidden");
+});
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function drawBackground() {
+  const grad = ctx.createRadialGradient(
+    CANVAS_SIZE / 2, CANVAS_SIZE / 2, 20,
+    CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE
+  );
+  grad.addColorStop(0, "#1a1a2d");
+  grad.addColorStop(1, "#0c0c1f");
+  ctx.fillStyle = grad;
+  roundRect(ctx, 0, 0, CANVAS_SIZE, CANVAS_SIZE, 20);
+  ctx.fill();
+
+  // empty cell sockets — soft cyan-tinted glass + a couple of faint star
+  // dots, so an empty board still feels like open space, not a blank grid
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const p = cellTopLeft(r, c);
+      ctx.fillStyle = "rgba(0, 219, 233, 0.045)";
+      roundRect(ctx, p.x, p.y, CELL, CELL, 12);
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(0, 219, 233, 0.06)";
+      roundRect(ctx, p.x, p.y, CELL, CELL, 12);
+      ctx.stroke();
+
+      const seed = (r * SIZE + c) * 137.5;
+      const dotCount = 2;
+      for (let i = 0; i < dotCount; i++) {
+        const dx = ((Math.sin(seed + i * 91.7) + 1) / 2) * (CELL - 14) + 7;
+        const dy = ((Math.cos(seed + i * 53.3) + 1) / 2) * (CELL - 14) + 7;
+        const tw = 0.35 + 0.35 * Math.abs(Math.sin(performance.now() / 900 + seed + i));
+        ctx.beginPath();
+        ctx.arc(p.x + dx, p.y + dy, 1.1, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${tw.toFixed(2)})`;
+        ctx.fill();
+      }
+    }
+  }
+
+  // Danger pulse: a gentle warning glow when the board is nearly full,
+  // so a game-over never feels like it came out of nowhere.
+  if (!gameOver && tiles.length >= SIZE * SIZE - 3) {
+    const pulse = 0.35 + 0.35 * Math.abs(Math.sin(performance.now() / 350));
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 71, 87, ${pulse})`;
+    ctx.lineWidth = 4;
+    roundRect(ctx, 2, 2, CANVAS_SIZE - 4, CANVAS_SIZE - 4, 18);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function roundRect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+function computePopScale(t) {
+  let scale = 1;
+  if (t._popStart) {
+    const elapsed = performance.now() - t._popStart;
+    const p = Math.min(1, elapsed / POP_MS);
+    scale = t._spawn
+      ? easeOutBack(p)
+      : 1 + 0.25 * (1 - p) * Math.sin(p * Math.PI);
+    if (p >= 1) t._popStart = null;
+  }
+  return scale;
+}
+
+function drawBlocker(t) {
+  const half = CELL / 2 - 4;
+  const scale = computePopScale(t);
+  const r = 14;
+
+  ctx.save();
+  ctx.translate(t.x, t.y);
+  ctx.scale(scale, scale);
+
+  ctx.shadowColor = "rgba(255, 71, 87, 0.45)";
+  ctx.shadowBlur = 14;
+  ctx.fillStyle = "#28283c";
+  roundRect(ctx, -half, -half, half * 2, half * 2, r);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  const grad = ctx.createLinearGradient(-half, -half, half, half);
+  grad.addColorStop(0, "rgba(255,71,87,0.28)");
+  grad.addColorStop(1, "rgba(255,71,87,0)");
+  ctx.fillStyle = grad;
+  roundRect(ctx, -half, -half, half * 2, half * 2, r);
+  ctx.fill();
+
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = "rgba(255,71,87,0.55)";
+  roundRect(ctx, -half, -half, half * 2, half * 2, r);
+  ctx.stroke();
+
+  ctx.font = `${half * 0.8}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("☄️", 0, -half * 0.1);
+
+  ctx.font = `bold ${half * 0.42}px "JetBrains Mono", monospace`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "bottom";
+  ctx.fillStyle = "#ff4757";
+  ctx.shadowColor = "rgba(255,71,87,0.8)";
+  ctx.shadowBlur = 6;
+  ctx.fillText(String(t.blockerTimer), half - 6, half - 4);
+  ctx.shadowBlur = 0;
+
+  ctx.restore();
+}
+
+function pseudoRandom(seed) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+function drawTile(t) {
+  if (t.isBlocker) { drawBlocker(t); return; }
+
+  const tier = tierFor(t.value);
+  const half = CELL / 2 - 4;
+  const scale = computePopScale(t);
+  const r = 14;
+
+  ctx.save();
+  ctx.translate(t.x, t.y);
+  ctx.scale(scale, scale);
+
+  // base card + soft cyan "active tile" outer glow, per the reference style
+  ctx.shadowColor = "rgba(0, 219, 233, 0.45)";
+  ctx.shadowBlur = 16;
+  ctx.fillStyle = "#28283c";
+  roundRect(ctx, -half, -half, half * 2, half * 2, r);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // diagonal tier-tinted gradient overlay (keeps each planet visually
+  // distinct) fading into the dark card, top-left to bottom-right
+  const grad = ctx.createLinearGradient(-half, -half, half, half);
+  grad.addColorStop(0, tier.c1 + "48");
+  grad.addColorStop(1, tier.c2 + "00");
+  roundRect(ctx, -half, -half, half * 2, half * 2, r);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // crystalline surface texture — deterministic per-tile seed (based on
+  // its id, not time) so the speckle/cracks stay put frame to frame
+  // instead of shimmering, giving a rock/crystal photographic feel
+  ctx.save();
+  roundRect(ctx, -half, -half, half * 2, half * 2, r);
+  ctx.clip();
+  const seed = (t.id % 97) * 13.37 + t.value;
+  for (let i = 0; i < 12; i++) {
+    const sx = (pseudoRandom(seed + i * 3.1) - 0.5) * half * 1.9;
+    const sy = (pseudoRandom(seed + i * 7.7) - 0.5) * half * 1.9;
+    const sr = 0.5 + pseudoRandom(seed + i * 5.3) * 1.3;
+    ctx.beginPath();
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${(0.03 + pseudoRandom(seed + i) * 0.06).toFixed(3)})`;
+    ctx.fill();
+  }
+  ctx.strokeStyle = "rgba(0, 219, 233, 0.25)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 2; i++) {
+    const x1 = (pseudoRandom(seed + i * 11) - 0.5) * half * 1.6;
+    const y1 = (pseudoRandom(seed + i * 17) - 0.5) * half * 1.6;
+    const x2 = x1 + (pseudoRandom(seed + i * 23) - 0.5) * half * 1.1;
+    const y2 = y1 + (pseudoRandom(seed + i * 29) - 0.5) * half * 1.1;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // cyan glass border
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = "rgba(0, 219, 233, 0.4)";
+  roundRect(ctx, -half, -half, half * 2, half * 2, r);
+  ctx.stroke();
+
+  // planet icon, centered
+  ctx.font = `${half * 0.85}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.shadowColor = tier.c2;
+  ctx.shadowBlur = 8;
+  ctx.fillText(tier.icon, 0, -half * 0.08);
+  ctx.shadowBlur = 0;
+
+  // value badge, bottom-right corner, cyan — matches the reference layout
+  ctx.font = `bold ${half * 0.4}px "JetBrains Mono", monospace`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "bottom";
+  ctx.fillStyle = "#00dbe9";
+  ctx.shadowColor = "rgba(0, 219, 233, 0.8)";
+  ctx.shadowBlur = 6;
+  ctx.fillText(String(t.value), half - 6, half - 4);
+  ctx.shadowBlur = 0;
+
+  ctx.restore();
+}
+
+function easeOutBack(p) {
+  const c1 = 1.70158, c3 = c1 + 1;
+  return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2);
+}
+
+function render() {
+  ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  ctx.save();
+  if (shakeTime > 0) {
+    ctx.translate((Math.random() - 0.5) * shakeMagnitude, (Math.random() - 0.5) * shakeMagnitude);
+  }
+
+  drawBackground();
+  for (const t of tiles) drawTile(t);
+
+  for (const p of particles) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - p.age / p.life);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  for (const pu of popups) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - pu.age / 0.8);
+    if (pu.big) {
+      ctx.fillStyle = "#ffb84d";
+      ctx.font = 'bold 32px "JetBrains Mono", monospace';
+      ctx.textAlign = "center";
+      ctx.shadowColor = "rgba(0,0,0,0.5)";
+      ctx.shadowBlur = 8;
+      ctx.fillText(pu.text, pu.x, pu.y - pu.age * 25);
+    } else {
+      ctx.fillStyle = "#ffe680";
+      ctx.font = 'bold 18px "JetBrains Mono", monospace';
+      ctx.textAlign = "center";
+      ctx.fillText(pu.text, pu.x, pu.y - pu.age * 40);
+    }
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+function update(dt) {
+  for (const p of particles) {
+    p.age += dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 200 * dt;
+  }
+  particles = particles.filter((p) => p.age < p.life);
+
+  for (const pu of popups) pu.age += dt;
+  popups = popups.filter((pu) => pu.age < 0.8);
+
+  if (shakeTime > 0) shakeTime = Math.max(0, shakeTime - dt);
+}
+
+function loop(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.033);
+  lastTime = now;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* initial idle render so the board isn't blank behind the menu */
+updateHUD();
+render();
+
+// Board is drawn and the menu is interactive — loading is done.
+try { window.CrazyGames.SDK.game.loadingStop(); } catch (e) {}
+</script>
+</body>
+</html>
